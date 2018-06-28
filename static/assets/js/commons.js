@@ -66,27 +66,27 @@ function info_ajax(id, url) {
 
 function auto_load(id, url, target, type) {
     var data = $(id).serializeJSON();
-    if (id === '#form_message') {
-            data = {
-                "test": {
-                    "name": data,
-                    "type": type
-                }
-            }
-    } else if (id === '#form_config') {
-            data = {
-                "config": {
-                    "name": data,
-                    "type": type
-                }
-            }
-        } else {
-            data = {
-                "task": {
-                    "name": data,
-                }
+    if (id === '#form_message' || id ==='#belong_message') {
+        data = {
+            "test": {
+                "name": data,
+                "type": type
             }
         }
+    } else if (id === '#form_config') {
+        data = {
+            "config": {
+                "name": data,
+                "type": type
+            }
+        }
+    } else {
+        data = {
+            "task": {
+                "name": data
+            }
+        }
+    }
     $.ajax({
         type: 'post',
         url: url,
