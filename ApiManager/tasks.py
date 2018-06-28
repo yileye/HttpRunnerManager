@@ -28,6 +28,8 @@ def main_hrun(testset_path, report_name):
     kwargs = {
         "failfast": False,
     }
+    print(testset_path)
+    print(report_name)
     runner = HttpRunner(**kwargs)
     run_time = time.strftime('%Y-%m-%d %H-%M-%S', time.localtime(time.time()))
     runner.run(testset_path)

@@ -1,10 +1,11 @@
 import logging
+import uuid
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import DataError
 
 from ApiManager.models import ProjectInfo, ModuleInfo, TestCaseInfo, UserInfo, EnvInfo, TestReports, DebugTalk, \
-    TestSuite
+    TestSuite, WebHooKInfo
 
 logger = logging.getLogger('HttpRunnerManager')
 
@@ -444,9 +445,7 @@ def add_test_reports(start_at, report_name=None, **kwargs):
         'start_at': start_at,
         'reports': kwargs
     }
-
     TestReports.objects.create(**test_reports)
-
 
 def testcase_temporary_path(data):
     """
@@ -458,3 +457,11 @@ def testcase_temporary_path(data):
     id = data.get('id')
     interface_url = eval(data.get('request')).get('test').get('request').get('url')
     case_opt.update_interface_by_id(id, interface_url)
+
+
+def generate_webhook_token(id):
+    webhook = WebHooKInfo.objects.filter(id=id)
+    if webhook.count() == 1:
+        token = str(uuid.uuid1())
+        webhook.update(token=token)
+        return {"status": 'success', "msg": [token]}
