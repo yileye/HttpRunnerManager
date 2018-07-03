@@ -1,5 +1,5 @@
 {% extends "base.html" %}
-{% block title %}配置信息{% endblock %}
+{% block title %}WebHook信息{% endblock %}
 {% load staticfiles %}
 {% block content %}
     <div class="am-modal am-modal-prompt" tabindex="-1" id="my-copy">
@@ -49,36 +49,19 @@
 
     <div class="admin-biaogelist">
         <div class="listbiaoti am-cf">
-            <ul class="am-icon-flag on"> 配置列表</ul>
-            <dl class="am-icon-home" style="float: right;"> 当前位置： 用例管理 > <a href="#">配置展示</a></dl>
-            <dl>
-                <button type="button" class="am-btn am-btn-primary am-round am-btn-xs am-icon-plus"
-                        onclick="location='/api/add_case/'">新增用例
-                </button>
-                <button type="button" class="am-btn am-btn-warning am-round am-btn-xs am-icon-plus"
-                        onclick="location='/api/add_config/'">新增配置
-                </button>
+            <ul class="am-icon-flag on"> WebHook列表</ul>
+            <dl class="am-icon-home" style="float: right;"> 当前位置： 用例管理 > <a href="#">WebHook列表展示</a></dl>
+
             </dl>
         </div>
 
         <div class="am-btn-toolbars am-btn-toolbar am-kg am-cf">
-            <form id="pro_filter" method="post" action="/api/config_list/1/">
+            <form id="pro_filter" method="post" action="/api/webhook/1/">
                 <ul>
-                    <li style="padding-top: 5px"><input value="{{ info.belong_project }}" type="text"
-                                                        name="belong_project"
-                                                        class="am-form-field am-input-sm am-input-xm"
-                                                        placeholder="所属项目"/></li>
-                    <li style="padding-top: 5px"><input value="{{ info.belong_module }}" type="text"
-                                                        name="belong_module"
-                                                        class="am-form-field am-input-sm am-input-xm"
-                                                        placeholder="所属模块"/></li>
-                    <li style="padding-top: 5px"><input value="{{ info.name }}" type="text" name="name"
-                                                        class="am-form-field am-input-sm am-input-xm"
-                                                        placeholder="配置名称"/></li>
                     <li>
-                    <li style="padding-top: 5px"><input value="{{ info.user }}" type="text" name="user"
+                    <li style="padding-top: 5px"><input value="" type="text" name="interface_name"
                                                         class="am-form-field am-input-sm am-input-xm"
-                                                        placeholder="创建者"/></li>
+                                                        placeholder="接口名称"/></li>
 
                     <button class="am-btn am-radius am-btn-xs am-btn-success"
                             style="margin-top: -1px;">搜索
@@ -95,56 +78,37 @@
                 <tr class="am-success">
                     <th class="table-check"><input type="checkbox" id="select_all"/></th>
                     <th class="table-title">序号</th>
-                    <th class="table-type">名称</th>
+                    <!--<th class="table-type">名称</th>-->
                     <th class="table-type">所属项目</th>
-                    <th class="table-type">所属模块</th>
-                    <th class="table-type">创建者</th>
-                    <th class="table-date am-hide-sm-only">创建时间</th>
-                    <th width="163px" class="table-title">操作</th>
+                    <!--<th class="table-date am-hide-sm-only">任务名称</th>-->
+                    <th class="table-type">Token</th>
+                    <th class="table-type">操作</th>
                 </tr>
                 </thead>
                 <tbody>
                 {% for foo in test %}
-                    <tr>
-                        <td><input type="checkbox" name="config_{{ foo.id }}" value="{{ foo.id }}"/></td>
+                    <form id="interface_num" method="POST" action="/api/webhook_list/1/">
+                        <tr>
+                        <td><input type="checkbox" name="webhook_{{ foo.id }}" value="{{ foo.id }}"/></td>
                         <td>{{ forloop.counter }}</td>
-                        <td><a href="/api/edit_config/{{ foo.id }}/">{{ foo.name }}</a>
+                        <!--<td><input type="hidden" name="webhook_name" value="{{ foo.webhook_name }}">{{ foo.webhook_name }}</a>-->
                         </td>
-                        <td>{{ foo.belong_project }}</td>
-                        <td>{{ foo.belong_module.module_name }}</td>
-                        <td>{{ foo.author }}</td>
-                        <td class="am-hide-sm-only">{{ foo.create_time }}</td>
+                        <td>{{ foo.belong_project.project_name }}</td>
+                        <!--<td>{{ foo.job_name }}</td>-->
+                        <td class="am-hide-sm-only" id="token_{{ foo.id }}">{{ foo.token }}</td>
                         <td>
-                            <div class="am-btn-toolbar">
-                                <div class="am-btn-group am-btn-group-xs">
-                                    <button type="button"
-                                            class="am-btn am-btn-default am-btn-xs am-text-danger am-round"
-                                            data-am-popover="{content: '复制', trigger: 'hover focus'}"
-                                            onclick="copy('#copy_list', '{{ foo.id }}', '{{ foo.name }}')"><span
-                                            class="am-icon-copy"></span></button>
-                                    <button type="button"
-                                            class="am-btn am-btn-default am-btn-xs am-text-danger am-round"
-                                            data-am-popover="{content: '删除', trigger: 'hover focus'}"
-                                            onclick="invalid('{{ foo.id }}')"><span
-                                            class="am-icon-trash-o"></span></button>
-
-                                </div>
-                            </div>
+                            <ul>
+                                <button type="button" class="am-btn am-btn-danger am-round am-btn-xs am-icon-bug"
+                                        onclick="webhook_ajax('{{ foo.id }}', '/api/webhook_list/', 'project')">重置
+                                </button>
+                            </ul>
                         </td>
-                    </tr>
+                        </tr>
+                    </form>
+
                 {% endfor %}
                 </tbody>
             </table>
-
-            <div class="am-btn-group am-btn-group-xs">
-                <button type="button" class="am-btn am-btn-default" onclick="location='/api/add_case/'"><span
-                        class="am-icon-plus"></span> 新增用例
-                </button>
-                <button type="button" class="am-btn am-btn-default" onclick="location='/api/add_config/'"><span
-                        class="am-icon-plus"></span> 新增配置
-                </button>
-            </div>
-
             <ul class="am-pagination am-fr">
                 {{ page_list }}
             </ul>
@@ -167,8 +131,7 @@
             });
         }
 
-        function copy(id, index, name) {
-            $('#name').val(name);
+        function copy(id, index) {
             $('#index').val(index);
             $('#my-copy').modal({
                 relatedTarget: this,
