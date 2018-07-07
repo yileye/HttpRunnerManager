@@ -104,6 +104,7 @@ def get_pager_info(Model, filter_query, url, id, per_items=12):
         belong_module = filter_query.get('belong_module')
         name = filter_query.get('name')
         user = filter_query.get('user')
+        level = filter_query.get('level')
         interface_url = filter_query.get('interface_name')
         if interface_url is None:
             interface_url = ''
@@ -121,6 +122,7 @@ def get_pager_info(Model, filter_query, url, id, per_items=12):
 
     elif url == '/api/report_list/':
         obj = obj.filter(report_name__contains=filter_query.get('report_name'))
+        obj = obj.order_by('-update_time')
 
     elif url == '/api/periodictask/':
         obj = obj.filter(name__contains=name).values('id', 'name', 'kwargs', 'enabled', 'date_changed') \
@@ -147,6 +149,8 @@ def get_pager_info(Model, filter_query, url, id, per_items=12):
                     obj = obj.filter(belong_module__module_name__contains=belong_module)
                 elif interface_url is not '':
                     obj = obj.filter(interface_url=interface_url)
+                elif level is not '':
+                    obj = obj.filter(level=level)
                 else:
                     obj = obj.filter(name__contains=name) if name is not '' else obj.filter(author__contains=user)
                 obj = obj.order_by('-update_time')
