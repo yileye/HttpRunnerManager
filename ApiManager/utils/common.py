@@ -468,12 +468,14 @@ def init_filter_session(request, type=True):
         request.session['name'] = ''
         request.session['belong_project'] = ''
         request.session['belong_module'] = ''
+        request.session['level'] = ''
         request.session['report_name'] = ''
     else:
         del request.session['user']
         del request.session['name']
         del request.session['belong_project']
         del request.session['belong_module']
+        del request.session['level']
         del request.session['report_name']
 
 
