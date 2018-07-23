@@ -388,6 +388,10 @@ def test_list(request, id):
 
         else:
             filter_query = set_filter_session(request)
+
+            if request.POST.get('level') is not None:
+                filter_query['level'] = request.POST.get('level')
+
             test_list = get_pager_info(
                 TestCaseInfo, filter_query, '/api/test_list/', id)
             manage_info = {

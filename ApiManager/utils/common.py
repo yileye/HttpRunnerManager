@@ -440,6 +440,8 @@ def set_filter_session(request):
         request.session['belong_project'] = request.POST.get('belong_project')
     if 'belong_module' in request.POST.keys():
         request.session['belong_module'] = request.POST.get('belong_module')
+    if 'level' in request.POST.keys():
+        request.session['level'] = request.POST.get('level')
     if 'report_name' in request.POST.keys():
         request.session['report_name'] = request.POST.get('report_name')
 
@@ -448,6 +450,7 @@ def set_filter_session(request):
         'name': request.session['name'],
         'belong_project': request.session['belong_project'],
         'belong_module': request.session['belong_module'],
+        'level': request.session['level'],
         'report_name': request.session['report_name']
     }
 
@@ -465,12 +468,14 @@ def init_filter_session(request, type=True):
         request.session['name'] = ''
         request.session['belong_project'] = ''
         request.session['belong_module'] = ''
+        request.session['level'] = ''
         request.session['report_name'] = ''
     else:
         del request.session['user']
         del request.session['name']
         del request.session['belong_project']
         del request.session['belong_module']
+        del request.session['level']
         del request.session['report_name']
 
 
