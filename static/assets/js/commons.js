@@ -66,7 +66,7 @@ function info_ajax(id, url) {
 
 function auto_load(id, url, target, type) {
     var data = $(id).serializeJSON();
-    if (id === '#form_message' || id ==='#belong_message') {
+    if (id === '#form_message' || id ==='#belong_message' || id === '#pro_filter') {
         data = {
             "test": {
                 "name": data,
@@ -83,7 +83,8 @@ function auto_load(id, url, target, type) {
     } else {
         data = {
             "task": {
-                "name": data
+                "name": data,
+                "type": type
             }
         }
     }
@@ -249,38 +250,6 @@ function case_ajax(type, editor) {
     });
 }
 
-function webhook_ajax(pro_id) {
-    var obj = $(this);
-    const test = {
-        "webhook": {
-            "pro_id": pro_id,
-        }
-    };
-    $.ajax({
-        type: 'post',
-        url: '/api/webhook_list/1/',
-        data: JSON.stringify(test),
-        contentType: "application/json",
-        success: function (data) {
-            if (data === 'session invalid') {
-                window.location.href = "/api/login/";
-            } else {
-                if (data.indexOf('/api/') != -1) {
-                    window.location.href = data;
-                } else {
-                    $('#token_'+pro_id).text(data)
-                    // $(obj).parent().parent().before().html(data);
-
-                }
-            }
-        },
-        error: function () {
-            myAlert('Sorry，服务器可能开小差啦, 请重试!');
-        }
-    });
-}
-
-
 function config_ajax(type) {
     var dataType = $("#config_data_type").serializeJSON();
     var caseInfo = $("#form_config").serializeJSON();
@@ -378,6 +347,7 @@ function del_row(id) {
     }
 }
 
+
 function add_row(id) {
     var tabObj = document.getElementById(id);//获取添加数据的表格
     var rowsNum = tabObj.rows.length;  //获取当前行数
@@ -431,6 +401,7 @@ function add_params(id) {
     newTdObj1.innerHTML = key;
     newTdObj2.innerHTML = value;
 }
+
 
 function init_acs(language, theme, editor) {
     editor.setTheme("ace/theme/" + theme);

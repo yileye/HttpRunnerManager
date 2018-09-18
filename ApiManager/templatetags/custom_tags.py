@@ -2,6 +2,8 @@ import json
 
 from django import template
 
+from ApiManager.utils.common import update_include
+
 register = template.Library()
 
 
@@ -22,9 +24,17 @@ def convert_eval(value):
     :param value:
     :return: the value which had been eval
     """
-    return eval(value)
+    return update_include(eval(value))
 
 
 @register.filter(name='json_dumps')
 def json_dumps(value):
     return json.dumps(value, indent=4, separators=(',', ': '), ensure_ascii=False)
+
+
+@register.filter(name='is_del')
+def id_del(value):
+    if value.endswith('已删除'):
+        return True
+    else:
+        return False

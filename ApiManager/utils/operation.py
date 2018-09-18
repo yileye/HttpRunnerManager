@@ -1,10 +1,14 @@
+import datetime
 import logging
+import os
 
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import DataError
 
+from ApiManager import separator
 from ApiManager.models import ProjectInfo, ModuleInfo, TestCaseInfo, UserInfo, EnvInfo, TestReports, DebugTalk, \
     TestSuite
+
 
 logger = logging.getLogger('HttpRunnerManager')
 
@@ -49,7 +53,7 @@ def add_project_data(type, **kwargs):
             try:
                 project_opt.insert_project(**kwargs)
                 belong_project = project_opt.get(project_name=project_name)
-                DebugTalk.objects.create(belong_project=belong_project)
+                DebugTalk.objects.create(belong_project=belong_project, debugtalk='# debugtalk.py')
             except DataError:
                 return '项目信息过长'
             except Exception:
@@ -109,7 +113,7 @@ def add_module_data(type, **kwargs):
     else:
         if module_name != module_opt.get_module_name('', type=False, id=kwargs.get('index')) \
                 and module_opt.filter(belong_project__project_name__exact=belong_project) \
-                        .filter(module_name__exact=module_name).count() > 0:
+                .filter(module_name__exact=module_name).count() > 0:
             return '该模块已存在，请重新命名'
         try:
             module_opt.update_module(kwargs.pop('index'), **kwargs)
@@ -135,20 +139,17 @@ def add_case_data(type, **kwargs):
     case_info = kwargs.get('test').get('case_info')
     case_opt = TestCaseInfo.objects
     name = kwargs.get('test').get('name')
-    level = case_info.get('level')
     module = case_info.get('module')
     project = case_info.get('project')
     belong_module = ModuleInfo.objects.get_module_name(module, type=False)
-    config_id = case_info.get('config', '')
-    if config_id != '请选择' and config_id != '':
-        config_name = TestCaseInfo.objects.get_case_by_id(config_id, type=False)
-        case_info.get('include').insert(0, {'config': [config_id, config_name]})
-
+    config = case_info.get('config', '')
+    if config != '':
+        case_info.get('include')[0] = eval(config)
 
     try:
         if type:
 
-            if case_opt.get_case_name(name, module, level, project) < 1:
+            if case_opt.get_case_name(name, module, project) < 1:
                 case_opt.insert_case(belong_module, **kwargs)
                 logger.info('{name}用例添加成功: {kwargs}'.format(name=name, kwargs=kwargs))
             else:
@@ -156,7 +157,7 @@ def add_case_data(type, **kwargs):
         else:
             index = case_info.get('test_index')
             if name != case_opt.get_case_by_id(index, type=False) \
-                    and case_opt.get_case_name(name, module, level, project) > 0:
+                    and case_opt.get_case_name(name, module, project) > 0:
                 return '用例或配置已在该模块中存在，请重新命名'
             case_opt.update_case(belong_module, **kwargs)
             logger.info('{name}用例更新成功: {kwargs}'.format(name=name, kwargs=kwargs))
@@ -229,7 +230,7 @@ def edit_suite_data(**kwargs):
     suite_obj = TestSuite.objects.get(id=id)
     try:
         if suite_name != suite_obj.suite_name and \
-                        TestSuite.objects.filter(belong_project=belong_project, suite_name=suite_name).count() > 0:
+                TestSuite.objects.filter(belong_project=belong_project, suite_name=suite_name).count() > 0:
             return 'Suite已存在, 请重新命名'
         suite_obj.suite_name = suite_name
         suite_obj.belong_project = belong_project
@@ -393,8 +394,6 @@ def copy_test_data(id, name):
         return '复制异常，请重试'
     if TestCaseInfo.objects.filter(name=name, belong_module=belong_module).count() > 0:
         return '用例/配置名称重复了哦'
-    if name is '':
-        return '用例名称不可为空'
     test.id = None
     test.name = name
     request = eval(test.request)
@@ -422,8 +421,6 @@ def copy_suite_data(id, name):
         return '复制异常，请重试'
     if TestSuite.objects.filter(suite_name=name, belong_project=belong_project).count() > 0:
         return 'Suite名称重复了哦'
-    if name is '':
-        return '配置名称不能为空'
     suite.id = None
     suite.suite_name = name
     suite.save()
@@ -431,7 +428,7 @@ def copy_suite_data(id, name):
     return 'ok'
 
 
-def add_test_reports(start_at, report_name=None, **kwargs):
+def add_test_reports(runner, report_name=None):
     """
     定时任务或者异步执行报告信息落地
     :param start_at: time: 开始时间
@@ -439,37 +436,25 @@ def add_test_reports(start_at, report_name=None, **kwargs):
     :param kwargs: dict: 报告结果值
     :return:
     """
-    kwargs.get('time')['start_at'] = start_at
-    report_name = report_name if report_name else start_at
-    kwargs['html_report_name'] = report_name
+    time_stamp = int(runner.summary["time"]["start_at"])
+    runner.summary['time']['start_datetime'] = datetime.datetime.fromtimestamp(time_stamp).strftime('%Y-%m-%d %H:%M:%S')
+    report_name = report_name if report_name else runner.summary['time']['start_datetime']
+    runner.summary['html_report_name'] = report_name
+
+    report_path = os.path.join(os.getcwd(), "reports{}{}.html".format(separator, int(runner.summary['time']['start_at'])))
+    runner.gen_html_report(html_report_template=os.path.join(os.getcwd(), "templates{}extent_report_template.html".format(separator)))
+
+    with open(report_path, encoding='utf-8') as stream:
+        reports = stream.read()
+
     test_reports = {
         'report_name': report_name,
-        'status': kwargs.get('success'),
-        'successes': kwargs.get('stat').get('successes'),
-        'testsRun': kwargs.get('stat').get('testsRun'),
-        'start_at': start_at,
-        'reports': kwargs
+        'status': runner.summary.get('success'),
+        'successes': runner.summary.get('stat').get('successes'),
+        'testsRun': runner.summary.get('stat').get('testsRun'),
+        'start_at': runner.summary['time']['start_datetime'],
+        'reports': reports
     }
 
     TestReports.objects.create(**test_reports)
-
-
-def testcase_temporary_path(data):
-    """
-    :param data:
-    :return:
-    """
-    case_opt = TestCaseInfo.objects
-    data = data
-    id = data.get('id')
-    interface_url = eval(data.get('request')).get('test').get('request').get('url')
-    case_opt.update_interface_by_id(id, interface_url)
-
-    
-def generate_webhook_token(id):
-    webhook = WebHooKInfo.objects.filter(id=id)
-    if webhook.count() == 1:
-        token = str(uuid.uuid1())
-        webhook.update(token=token)
-        return {"status": 'success', "msg": [token]}
-
+    return report_path

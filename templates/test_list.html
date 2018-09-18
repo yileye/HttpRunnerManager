@@ -94,27 +94,40 @@
         <div class="am-btn-toolbars am-btn-toolbar am-kg am-cf">
             <form id="pro_filter" method="post" action="/api/test_list/1/">
                 <ul>
-                    <li style="padding-top: 5px"><input value="{{ info.belong_project }}" type="text"
-                                                        name="belong_project"
-                                                        class="am-form-field am-input-sm am-input-xm"
-                                                        placeholder="所属项目"/></li>
-                    <li style="padding-top: 5px"><input value="{{ info.belong_module }}" type="text"
-                                                        name="belong_module"
-                                                        class="am-form-field am-input-sm am-input-xm"
-                                                        placeholder="所属模块"/></li>
+                    <li style="padding-top: 5px">
+                        <select name="project" class="am-input-zm am-input-xm"
+                                onchange="auto_load('#pro_filter', '/api/add_case/', '#module', 'module')">
+                            <option value="{{ info.belong_project }}"
+                                    selected>{{ info.belong_project }}</option>
+                            {% for foo in project %}
+                                {% ifnotequal info.belong_project foo.project_name %}
+                                    <option value="{{ foo.project_name }}">{{ foo.project_name }}</option>
+                                {% endifnotequal %}
+
+                            {% endfor %}
+                            {% if info.belong_project != 'All' %}
+                                <option value="All">All</option>
+                            {% endif %}
+                        </select>
+                    </li>
+
+                    <li style="padding-top: 5px">
+                        <select name="module" class=" am-input-zm am-input-xm" id="module">
+                        </select>
+                    </li>
+
                     <li style="padding-top: 5px"><input value="{{ info.name }}" type="text" name="name"
-                                                        class="am-form-field am-input-sm am-input-xm"
+                                                        class=" am-input-zm am-input-xm"
                                                         placeholder="用例名称"/></li>
+                    <li>
                     <li style="padding-top: 5px"><input value="{{ info.user }}" type="text" name="user"
-                                                        class="am-form-field am-input-sm am-input-xm"
-                                                        placeholder="创建者"/></li>
-                    <li style="padding-top: 5px"><input value="{{ info.level }}" type="text" name="level"
-                                                        class="am-form-field am-input-sm am-input-xm"
-                                                        placeholder="用例级别"/></li>
-                    <li style="padding-top: 6px">
-                    <button class="am-btn am-radius am-btn-xs am-btn-success"
-                            style="margin-top: -1px;">搜索
-                    </button>
+                                                        class="am-input-sm am-input-xm"
+                                                        placeholder="创建者"/>
+                    </li>
+                    <li>
+                        <button style="padding-top: 5px; margin-top: 9px"
+                                class="am-btn am-radius am-btn-xs am-btn-success">搜索
+                        </button>
                     </li>
                 </ul>
             </form>
@@ -130,7 +143,6 @@
                     <th class="table-type">名称</th>
                     <th class="table-type">所属项目</th>
                     <th class="table-type">所属模块</th>
-                    <th class="table-type">用例级别</th>
                     <th class="table-type">创建者</th>
                     <th width="163px" class="table-title">操作</th>
                 </tr>
@@ -160,16 +172,31 @@
                                     <ul id="pre_case{{ foo.id }}" class="am-nav am-collapse">
                                         {% for path in foo.include|convert_eval %}
                                             {% if path|data_type != 'list' %}
-                                                <li id="{{ path.0 }}">
-                                                    <a href="/api/edit_config/{{ path.config.0 }}/"
-                                                       id="{{ path.config.0 }}"
-                                                       style="color:cadetblue">{{ path.config.1 }}</a>
-                                                </li>
+                                                {% if path.config.1|is_del == True %}
+                                                    <li id="{{ path.0 }}">
+                                                        <span style="color: red;">{{ path.config.1 }}</span>
+                                                    </li>
+                                                {% else %}
+                                                    <li id="{{ path.0 }}">
+                                                        <a href="/api/edit_config/{{ path.config.0 }}/"
+                                                           id="{{ path.config.0 }}"
+                                                           style="color:cadetblue">{{ path.config.1 }}</a>
+                                                    </li>
+                                                {% endif %}
+
                                             {% else %}
-                                                <li id="{{ path.0 }}">
-                                                    <a href="/api/edit_case/{{ path.0 }}/" id="{{ path.0 }}"
-                                                       style="color:rosybrown">{{ path.1 }}</a>
-                                                </li>
+                                                {% if path.1|is_del == True %}
+                                                    <li id="{{ path.0 }}" s>
+                                                       <span style="color: red;">{{ path.1 }}</span>
+                                                    </li>
+                                                {% else %}
+                                                    <li id="{{ path.0 }}">
+                                                        <a href="/api/edit_case/{{ path.0 }}/" id="{{ path.0 }}"
+                                                           style="color:rosybrown">{{ path.1 }}</a>
+                                                    </li>
+
+                                                {% endif %}
+
                                             {% endif %}
                                         {% endfor %}
                                     </ul>
@@ -178,7 +205,6 @@
                         </td>
                         <td>{{ foo.belong_project }}</td>
                         <td>{{ foo.belong_module.module_name }}</td>
-                        <td>{{ foo.level }}</td>
                         <td>{{ foo.author }}</td>
                         <td>
                             <div class="am-btn-toolbar">
@@ -192,7 +218,7 @@
                                     <button type="button"
                                             class="am-btn am-btn-default am-btn-xs am-text-danger am-round"
                                             data-am-popover="{content: '复制', trigger: 'hover focus'}"
-                                            onclick="copy('#copy_list', '{{ foo.id }}', '{{ foo.name }}')"><span
+                                            onclick="copy('#copy_list', '{{ foo.id }}')"><span
                                             class="am-icon-copy"></span></button>
                                     <button type="button"
                                             class="am-btn am-btn-default am-btn-xs am-text-danger am-round"
@@ -226,6 +252,7 @@
         </form>
     </div>
     <script type="text/javascript">
+
         function coolspo(id) {
             $('#co' + id).css('display', 'none');
             $('#cc' + id).css('display', 'block');
@@ -269,8 +296,7 @@
             });
         }
 
-        function copy(id, index, name) {
-            $('#name').val(name);
+        function copy(id, index) {
             $('#index').val(index);
             $('#my-copy').modal({
                 relatedTarget: this,
@@ -281,8 +307,6 @@
                 }
             });
         }
-
-
 
         function run_test(index) {
             $('#select_env').modal({
@@ -301,6 +325,11 @@
         $('#select_all').click(function () {
             var isChecked = $(this).prop("checked");
             $("input[name^='testcase']").prop("checked", isChecked);
-        })
+        });
+
+        $().ready(function () {
+            auto_load('#pro_filter', '/api/add_case/', '#module', 'module');
+        });
+
     </script>
 {% endblock %}

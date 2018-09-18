@@ -12,11 +12,11 @@
             <form id="pro_filter" method="post" action="/api/report_list/1/">
                 <ul>
                     <li style="padding-top: 5px"><input value="{{ info.report_name }}" type="text" name="report_name"
-                                                        class="am-form-field am-input-sm am-input-xm"
+                                                        class="am-input-sm am-input-xm"
                                                         placeholder="报告名称"/></li>
                     <li style="padding-top: 6px">
                         <button class="am-btn am-radius am-btn-xs am-btn-success"
-                                style="margin-top: -1px;">查询
+                                style="margin-top: 9px;">查询
                         </button>
                     </li>
                 </ul>
@@ -58,7 +58,7 @@
                                             class="am-btn am-btn-default am-btn-xs am-text-danger am-round"
                                             data-am-popover="{content: '下载', trigger: 'hover focus'}"
                                             onclick="download_report('{{ foo.id }}')"><span
-                                            class="am-icon-copy"></span></button>
+                                            class="am-icon-download"></span></button>
                                     <button type="button"
                                             class="am-btn am-btn-default am-btn-xs am-text-danger am-round"
                                             data-am-popover="{content: '删除', trigger: 'hover focus'}"

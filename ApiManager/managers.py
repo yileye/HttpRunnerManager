@@ -87,6 +87,7 @@ class ModuleInfoManager(models.Manager):
                 return self.get(id=module_name)
 
 
+
 '''用例信息表操作'''
 
 
@@ -94,12 +95,8 @@ class TestCaseInfoManager(models.Manager):
     def insert_case(self, belong_module, **kwargs):
         case_info = kwargs.get('test').pop('case_info')
         self.create(name=kwargs.get('test').get('name'), belong_project=case_info.pop('project'),
-                    level=case_info.get('level','P0'),
                     belong_module=belong_module,
-                    author=case_info.pop('author'),
-                    include=case_info.pop('include'),
-                    request=kwargs,
-                    interface_url=kwargs.get('test').get('request').get('url'))
+                    author=case_info.pop('author'), include=case_info.pop('include'), request=kwargs)
 
     def update_case(self, belong_module, **kwargs):
         case_info = kwargs.get('test').pop('case_info')
@@ -107,16 +104,9 @@ class TestCaseInfoManager(models.Manager):
         obj.belong_project = case_info.pop('project')
         obj.belong_module = belong_module
         obj.name = kwargs.get('test').get('name')
-        obj.level = case_info.pop('level')
         obj.author = case_info.pop('author')
         obj.include = case_info.pop('include')
         obj.request = kwargs
-        obj.interface_url = kwargs.get('test').get('request').get('url')
-        obj.save()
-
-    def update_interface_by_id(self, id, interface_url):
-        obj = self.get(id=id)
-        obj.interface_url = interface_url
         obj.save()
 
     def insert_config(self, belong_module, **kwargs):
@@ -135,13 +125,9 @@ class TestCaseInfoManager(models.Manager):
         obj.request = kwargs
         obj.save()
 
-    def get_case_name(self, name, module_name,belong_project,level=None):
-        if level==None:
-            return self.filter(belong_module__module_name=module_name).filter(name__exact=name).filter(
-                belong_project__exact=belong_project).count()
-        else:
-            return self.filter(belong_module__module_name=module_name).filter(name__exact=name).filter(level__exact=level).filter(
-                belong_project__exact=belong_project).count()
+    def get_case_name(self, name, module_name, belong_project):
+        return self.filter(belong_module__id=module_name).filter(name__exact=name).filter(
+            belong_project__exact=belong_project).count()
 
     def get_case_by_id(self, index, type=True):
         if type:

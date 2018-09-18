@@ -217,14 +217,14 @@
                     {% for test_suite_summary in details %}
                         {% if test_suite_summary.success == True %}
                             <li class='test displayed active has-leaf pass' status='pass' bdd='true'
-                                test-id='{{ test_suite_summary.name }}_{{ forloop.counter }}'>
+                                test-id='{{ test_suite_summary.name }}_{{ loop.index }}'>
                                 {% else %}
                             <li class='test displayed active has-leaf fail' status='fail' bdd='false'
-                                test-id='{{ test_suite_summary.name }}_{{ forloop.counter }}'>
+                                test-id='{{ test_suite_summary.name }}_{{ loop.index }}'>
                         {% endif %}
                         <div class='test-heading'>
                             <span class='test-name'>{{ test_suite_summary.name }}</span>
-                            <span class='test-time'>baseurl: {{ test_suite_summary.base_url }}</span>
+                            <span class='test-time'>base_url: {{ test_suite_summary.base_url }}</span>
                             {% if test_suite_summary.success == True %}
                                 <span class='test-status right pass'>pass</span>
                             {% else %}
@@ -236,7 +236,7 @@
                         <div class='test-content hide'>
                             <div class='test-time-info'>
                                 <span class='label start-time'>{{ test_suite_summary.time.start_at }}</span>
-                                <span class='label end-time'>{{ test_suite_summary.time.duration|floatformat:3 }} seconds</span>
+                                <span class='label end-time'>{{ '%0.3f'| format(test_suite_summary.time.duration|float) }} seconds</span>
                             </div>
                             <div class='test-desc'>Pass: {{ test_suite_summary.stat.successes }} ;
                                 Fail: {{ test_suite_summary.stat.failures }} ;
@@ -253,16 +253,16 @@
                                 {% for record in test_suite_summary.records %}
                                     {% if  record.status == 'success' %}
                                         <li class='node level-1 leaf pass' status='pass'
-                                            test-id='{{ test_suite_summary.name }}_{{ record.name }}_{{ forloop.counter }}'>
+                                            test-id='{{ test_suite_summary.name }}_{{ record.name }}_{{ loop.index }}'>
                                             {% elif record.status == 'failure' %}
                                         <li class='node level-1 leaf fail' status='fail'
-                                            test-id='{{ test_suite_summary.name }}_{{ record.name }}_{{ forloop.counter }}'>
+                                            test-id='{{ test_suite_summary.name }}_{{ record.name }}_{{ loop.index }}'>
                                             {% elif record.status == 'error' %}
                                         <li class='node level-1 leaf error' status='error'
-                                            test-id='{{ test_suite_summary.name }}_{{ record.name }}_{{ forloop.counter }}'>
+                                            test-id='{{ test_suite_summary.name }}_{{ record.name }}_{{ loop.index }}'>
                                             {% elif record.status == 'skipped' %}
                                         <li class='node level-1 leaf skip' status='skip'
-                                            test-id='{{ test_suite_summary.name }}_{{ record.name }}_{{ forloop.counter }}'>
+                                            test-id='{{ test_suite_summary.name }}_{{ record.name }}_{{ loop.index }}'>
                                     {% endif %}
                                 <div class='collapsible-header'>
                                     <div class='node-name'>{{ record.name }}</div>
@@ -312,7 +312,7 @@
                                                 <td class='timestamp'>status_code</td>
                                                 <td class='step-details'>{{ record.meta_data.response.status_code }}</td>
                                             </tr>
-                                            {% for key, value in record.meta_data.request.items %}
+                                            {% for key, value in record.meta_data.request.items() %}
                                                 {% if key != 'url' and key != 'method' and key != 'start_timestamp' %}
                                                     <tr class='log' status='debug'>
                                                         <td class='status debug' title='debug' alt='debug'><i
@@ -320,7 +320,7 @@
                                                         <td class='timestamp'>{{ key }}</td>
                                                         <td class='step-details'>
                                                             {% if key == "headers" %}
-                                                                {% for header_key, header_value in record.meta_data.request.headers.items %}
+                                                                {% for header_key, header_value in record.meta_data.request.headers.items() %}
                                                                     <div>
                                                                         <strong>{{ header_key }}</strong>: {{ header_value }}
                                                                     </div>
@@ -329,11 +329,12 @@
                                                                 {{ value }}
                                                             {% endif %}
                                                         </td>
+
                                                     </tr>
                                                 {% endif %}
                                             {% endfor %}
 
-                                            {% for key, value in record.meta_data.response.items %}
+                                            {% for key, value in record.meta_data.response.items() %}
                                                 {% if key != "content" and key != "json" and key != "elapsed_ms" and key != "response_time_ms" and key != "content_size" and key != "content_type" and key != "status_code" and key != "reason" and key != "ok" and key != "encoding" and key != "url" %}
                                                     <tr class='log' status='debug'>
                                                         <td class='status debug' title='debug' alt='debug'><i
@@ -341,7 +342,7 @@
                                                         <td class='timestamp'>{{ key }}</td>
                                                         <td class='step-details'>
                                                             {% if key == "headers" %}
-                                                                {% for header_key, header_value in record.meta_data.request.headers.items %}
+                                                                {% for header_key, header_value in record.meta_data.request.headers.items() %}
                                                                     <div>
                                                                         <strong>{{ header_key }}</strong>: {{ header_value }}
                                                                     </div>
@@ -507,7 +508,7 @@
                                         <tr style="border: 1px solid #49cc90; background-color: rgba(73, 204, 144, .1)">
                                             <td>{{ test_suite_summary.time.start_at }}</td>
                                             <td class='linked'
-                                                test-id='{{ test_suite_summary.name }}_{{ forloop.counter }}'>{{ test_suite_summary.name }}</td>
+                                                test-id='{{ test_suite_summary.name }}_{{ loop.index }}'>{{ test_suite_summary.name }}</td>
                                             {% if test_suite_summary.success == True %}
                                                 <td><span class='test-status pass'>pass</span></td>
                                             {% else %}
@@ -520,7 +521,7 @@
                                                 <tr>
                                                     <td>{{ record.meta_data.request.start_timestamp }}</td>
                                                     <td class='linked'
-                                                        test-id='{{ test_suite_summary.name }}_{{ record.name }}_{{ forloop.counter }}'>{{ record.name }}</td>
+                                                        test-id='{{ test_suite_summary.name }}_{{ record.name }}_{{ loop.index }}'>{{ record.name }}</td>
                                                     {% if record.status == 'success' %}
                                                         <td><span class='test-status pass'>pass</span></td>
                                                     {% elif record.status == 'failure' %}
@@ -580,7 +581,7 @@
                                             <tr>
                                                 <td>{{ record.meta_data.request.start_timestamp }}</td>
                                                 <td class='linked'
-                                                    test-id='{{ test_suite_summary.name }}_{{ record.name }}_{{ forloop.counter }}'>{{ record.name }}</td>
+                                                    test-id='{{ test_suite_summary.name }}_{{ record.name }}_{{ loop.index }}'>{{ record.name }}</td>
                                                 {% if record.status == 'success' %}
                                                     <td><span class='test-status pass'>pass</span></td>
                                                 {% elif record.status == 'failure' %}
@@ -649,7 +650,7 @@
                 <div class='col s2'>
                     <div class='card-panel r'>
                         Time Taken
-                        <div class='panel-lead'>{{ time.duration|floatformat:3 }} seconds</div>
+                        <div class='panel-lead'>{{ '%0.3f'| format(time.duration|float) }} seconds</div>
                     </div>
                 </div>
                 <div class='col s4'>

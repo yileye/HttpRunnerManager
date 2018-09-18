@@ -3,16 +3,19 @@ import io
 import json
 import logging
 import os
+import platform
 from json import JSONDecodeError
 
 import yaml
+from django.core.exceptions import ObjectDoesNotExist
 from django.db.models import Sum
 from djcelery.models import PeriodicTask
 
-from ApiManager.models import ModuleInfo, TestCaseInfo, TestReports,WebHooKInfo
+from ApiManager.models import ModuleInfo, TestCaseInfo, TestReports, TestSuite
 from ApiManager.utils.operation import add_project_data, add_module_data, add_case_data, add_config_data, \
-    add_register_data, testcase_temporary_path
+    add_register_data
 from ApiManager.utils.task_opt import create_task
+
 
 logger = logging.getLogger('HttpRunnerManager')
 
@@ -69,7 +72,7 @@ def key_value_list(keyword, **kwargs):
                 else:
                     type = 'str'
                 tips = '{keyword}: {val}格式错误,不是{type}类型'.format(keyword=keyword, val=val, type=type)
-                if key != '' and val != '':
+                if key != '':
                     if keyword == 'validate':
                         value['check'] = key
                         msg = type_change(type, val)
@@ -116,7 +119,7 @@ def key_value_dict(keyword, **kwargs):
             else:
                 type = 'str'
 
-            if key != '' and val != '':
+            if key != '':
                 if keyword == 'headers':
                     value[key] = val
                 elif keyword == 'data':
@@ -144,6 +147,22 @@ def load_modules(**kwargs):
     return string[:len(string) - 11]
 
 
+def load_testsuites(**kwargs):
+    """
+    加载对应项目的模块信息，用户前端ajax请求返回
+    :param kwargs:  dict：项目相关信息
+    :return: str: module_info
+    """
+    belong_project = kwargs.get('name').get('project')
+    module_info = TestSuite.objects.filter(belong_project__project_name=belong_project) \
+        .values_list('id', 'suite_name').order_by('-create_time')
+    module_info = list(module_info)
+    string = ''
+    for value in module_info:
+        string = string + str(value[0]) + '^=' + value[1] + 'replaceFlag'
+    return string[:len(string) - 11]
+
+
 def load_cases(type=1, **kwargs):
     """
     加载指定项目模块下的用例
@@ -152,14 +171,10 @@ def load_cases(type=1, **kwargs):
     """
     belong_project = kwargs.get('name').get('project')
     module = kwargs.get('name').get('module')
-    if type == 1:
-        if module == '请选择':
-            return ''
-        case_info = TestCaseInfo.objects.filter(belong_project=belong_project, belong_module=module, type=type). \
-            values_list('id', 'name').order_by('-create_time')
-    elif type == 2:
-        case_info = TestCaseInfo.objects.filter(belong_project=belong_project, type=type). \
-            values_list('id', 'name').order_by('-create_time')
+    if module == '请选择':
+        return ''
+    case_info = TestCaseInfo.objects.filter(belong_project=belong_project, belong_module=module, type=type). \
+        values_list('id', 'name').order_by('-create_time')
     case_info = list(case_info)
     string = ''
     for value in case_info:
@@ -228,12 +243,6 @@ def case_info_logic(type=True, **kwargs):
         logging.info('用例原始信息: {kwargs}'.format(kwargs=kwargs))
         if test.get('name').get('case_name') is '':
             return '用例名称不可为空'
-        if test.get('name').get('level') == '请选择':
-            return '请选择用例级别'
-        if test.get('name').get('author') is '':
-            return '创建者不能为空'
-        if test.get('request').get('url') is '':
-            return '接口地址不能为空'
         if test.get('name').get('module') == '请选择':
             return '请选择或者添加模块'
         if test.get('name').get('project') == '请选择':
@@ -391,7 +400,10 @@ def task_logic(**kwargs):
     :return:
     """
     if 'task' in kwargs.keys():
-        return load_modules(**kwargs.pop('task'))
+        if kwargs.get('task').get('type') == 'module':
+            return load_modules(**kwargs.pop('task'))
+        else:
+            return load_testsuites(**kwargs.pop('task'))
     if kwargs.get('name') is '':
         return '任务名称不可为空'
     elif kwargs.get('project') is '':
@@ -418,10 +430,16 @@ def task_logic(**kwargs):
         return '任务名称重复，请重新命名'
     desc = " ".join(str(i) for i in crontab_time)
     name = kwargs.get('name')
+    mode = kwargs.pop('mode')
 
     if 'module' in kwargs.keys():
         kwargs.pop('project')
-        return create_task(name, 'ApiManager.tasks.module_hrun', kwargs, crontab, desc)
+
+        if mode == '1':
+            return create_task(name, 'ApiManager.tasks.module_hrun', kwargs, crontab, desc)
+        else:
+            kwargs['suite'] = kwargs.pop('module')
+            return create_task(name, 'ApiManager.tasks.suite_hrun', kwargs, crontab, desc)
     else:
         return create_task(name, 'ApiManager.tasks.project_hrun', kwargs, crontab, desc)
 
@@ -436,21 +454,21 @@ def set_filter_session(request):
         request.session['user'] = request.POST.get('user')
     if 'name' in request.POST.keys():
         request.session['name'] = request.POST.get('name')
-    if 'belong_project' in request.POST.keys():
-        request.session['belong_project'] = request.POST.get('belong_project')
-    if 'belong_module' in request.POST.keys():
-        request.session['belong_module'] = request.POST.get('belong_module')
-    if 'level' in request.POST.keys():
-        request.session['level'] = request.POST.get('level')
+    if 'project' in request.POST.keys():
+        request.session['project'] = request.POST.get('project')
+    if 'module' in request.POST.keys():
+        try:
+            request.session['module'] = ModuleInfo.objects.get(id=request.POST.get('module')).module_name
+        except Exception:
+            request.session['module'] = request.POST.get('module')
     if 'report_name' in request.POST.keys():
         request.session['report_name'] = request.POST.get('report_name')
 
     filter_query = {
         'user': request.session['user'],
         'name': request.session['name'],
-        'belong_project': request.session['belong_project'],
-        'belong_module': request.session['belong_module'],
-        'level': request.session['level'],
+        'belong_project': request.session['project'],
+        'belong_module': request.session['module'],
         'report_name': request.session['report_name']
     }
 
@@ -466,16 +484,14 @@ def init_filter_session(request, type=True):
     if type:
         request.session['user'] = ''
         request.session['name'] = ''
-        request.session['belong_project'] = ''
-        request.session['belong_module'] = ''
-        request.session['level'] = ''
+        request.session['project'] = 'All'
+        request.session['module'] = '请选择'
         request.session['report_name'] = ''
     else:
         del request.session['user']
         del request.session['name']
-        del request.session['belong_project']
-        del request.session['belong_module']
-        del request.session['level']
+        del request.session['project']
+        del request.session['module']
         del request.session['report_name']
 
 
@@ -579,17 +595,52 @@ def get_total_values():
     return total
 
 
-def testcase_path(data):
+def update_include(include):
+    for i in range(0, len(include)):
+        if isinstance(include[i], dict):
+            id = include[i]['config'][0]
+            source_name = include[i]['config'][1]
+            try:
+                name = TestCaseInfo.objects.get(id=id).name
+            except ObjectDoesNotExist:
+                name = source_name+'_已删除!'
+                logger.warning('依赖的 {name} 用例/配置已经被删除啦！！'.format(name=source_name))
 
-    return testcase_temporary_path(data)
+            include[i] = {
+                'config': [id, name]
+            }
+        else:
+            id = include[i][0]
+            source_name = include[i][1]
+            try:
+                name = TestCaseInfo.objects.get(id=id).name
+            except ObjectDoesNotExist:
+                name = source_name + ' 已删除'
+                logger.warning('依赖的 {name} 用例/配置已经被删除啦！！'.format(name=source_name))
+
+            include[i] = [id, name]
+
+    return include
 
 
-def webhook_logic(token, pro):
-    """
+def timestamp_to_datetime(summary, type=True):
+    if not type:
+        time_stamp = int(summary["time"]["start_at"])
+        summary['time']['start_datetime'] = datetime.datetime. \
+            fromtimestamp(time_stamp).strftime('%Y-%m-%d %H:%M:%S')
 
-    :param data:
-    :return:
-    """
-    num = WebHooKInfo.objects.filter(belong_project=pro).filter(token=token).count()
+    for detail in summary['details']:
+        try:
+            time_stamp = int(detail['time']['start_at'])
+            detail['time']['start_at'] = datetime.datetime.fromtimestamp(time_stamp).strftime('%Y-%m-%d %H:%M:%S')
+        except Exception:
+            pass
 
-    return 'access_pass' if num == 1 else 'access_denied'
+        for record in detail['records']:
+            try:
+                time_stamp = int(record['meta_data']['request']['start_timestamp'])
+                record['meta_data']['request']['start_timestamp'] = \
+                    datetime.datetime.fromtimestamp(time_stamp).strftime('%Y-%m-%d %H:%M:%S')
+            except Exception:
+                pass
+    return summary
